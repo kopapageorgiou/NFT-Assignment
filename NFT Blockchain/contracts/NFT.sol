@@ -10,22 +10,32 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 contract NFT is ERC721URIStorage, Ownable{
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
-
+    mapping(address => string) getOwnerOfaddress;
     constructor() ERC721("NFT", "ENEFTI"){}
 
-    function mintNFT(address _signer, bytes memory _imageb, bytes memory _signature) public returns (uint256){
-        bytes32 imageHash = getMessageHash(_imageb);
-        bytes32 ethSignedImageHash = getEthSignedDataHash(imageHash);
+    function mintNFT(address _signer, bytes memory _signature, string memory _fullname, string memory _uri) public returns (uint256){
+        bytes32 dataHash = getMessageHash(_uri);
+        bytes32 ethSignedDataHash = getEthSignedDataHash(dataHash);
 
-        require(recover(ethSignedImageHash, _signature) == _signer, "Invalid signature");
+        require(recover(ethSignedDataHash, _signature) == _signer, "Invalid signature");
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
         _mint(_signer, newItemId);
+        getOwnerOfaddress[_signer] = _fullname;
+        _setTokenURI(newItemId, _uri);
         return newItemId;
 
     }
+    function getNFT(uint256 _id) public view returns(string memory, string memory){
+        string memory owner = getOwnerOfaddress[ownerOf(_id)];
+        return (tokenURI(_id), owner);
+    }
 
-    function getMessageHash(bytes memory _data) public pure returns (bytes32){
+    function getCounter() public view returns(uint256){
+        return _tokenIds.current();
+    }
+
+    function getMessageHash(string memory _data) public pure returns (bytes32){
         return keccak256(abi.encodePacked(_data));
     }
 

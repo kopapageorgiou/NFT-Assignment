@@ -1,13 +1,15 @@
 from PIL import Image
 from IPython.display import display
-import random
+import random, string
 import json
 import os
 import rarity as rar
 import filepaths as fl
-TOTAL = 1
+import ipfsApi
+from BlockchainLib import *
+from generate_metadata import *
 
-all_images = []
+image = {}
 
 def create_new_image():
     new_image = {}
@@ -19,75 +21,16 @@ def create_new_image():
     new_image["mouth"] = random.choices(rar.mouth, rar.mouth_weights)[0]
     new_image["nose"] = random.choices(rar.nose, rar.nose_weights)[0]
 
-    if new_image in all_images:
-        return create_new_image()
-    else:
-        return new_image
+    return new_image
 
-for i in range(TOTAL):
-    all_images.append(create_new_image())
+def generate_image(image):
 
-def all_images_unique(all_images):
-    seen = list()
-    return not any(i in seen or seen.append(i) for i in all_images)
-
-print("Are all images unique?", all_images_unique(all_images))
-# Add token Id to each image
-i = 0
-for item in all_images:
-    item["tokenId"] = i
-    i = i + 1
-   
-print(all_images)
-
-face_count = {}
-for item in rar.face:
-    face_count[item] = 0
-    
-ears_count = {}
-for item in rar.ears:
-    ears_count[item] = 0
-
-eyes_count = {}
-for item in rar.eyes:
-    eyes_count[item] = 0
-    
-hair_count = {}
-for item in rar.hair:
-    hair_count[item] = 0
-    
-mouth_count = {}
-for item in rar.mouth:
-    mouth_count[item] = 0
-    
-nose_count = {}
-for item in rar.nose:
-    nose_count[item] = 0
-
-for image in all_images:
-    face_count[image["face"]] += 1
-    ears_count[image["ears"]] += 1
-    eyes_count[image["eyes"]] += 1
-    hair_count[image["hair"]] += 1
-    mouth_count[image["mouth"]] += 1
-    nose_count[image["nose"]] += 1
-    
-print(face_count)
-print(ears_count)
-print(eyes_count)
-print(hair_count)
-print(mouth_count)
-print(nose_count)
-if not os.path.exists("./images"):
-    os.mkdir(f'./images')
-
-for item in all_images:
-    img1 = Image.open(fl.face_files[item["face"]]).convert('RGBA')
-    img2 = Image.open(fl.eyes_files[item["eyes"]]).convert('RGBA')
-    img3 = Image.open(fl.ears_files[item["ears"]]).convert('RGBA')
-    img4 = Image.open(fl.hair_files[item["hair"]]).convert('RGBA')
-    img5 = Image.open(fl.mouth_files[item["mouth"]]).convert('RGBA')
-    img6 = Image.open(fl.nose_files[item["nose"]]).convert('RGBA')
+    img1 = Image.open(fl.face_files[image["face"]]).convert('RGBA')
+    img2 = Image.open(fl.eyes_files[image["eyes"]]).convert('RGBA')
+    img3 = Image.open(fl.ears_files[image["ears"]]).convert('RGBA')
+    img4 = Image.open(fl.hair_files[image["hair"]]).convert('RGBA')
+    img5 = Image.open(fl.mouth_files[image["mouth"]]).convert('RGBA')
+    img6 = Image.open(fl.nose_files[image["nose"]]).convert('RGBA')
 
     com1 = Image.alpha_composite(img1, img2)
     com2 = Image.alpha_composite(com1, img3)
@@ -95,6 +38,25 @@ for item in all_images:
     com4 = Image.alpha_composite(com3, img5)
     com5 = Image.alpha_composite(com4, img6)
 
-    rgb_im = com5.convert('RGB')
-    file_name = str(item["tokenId"]) + ".png"
-    rgb_im.save("./images/" + file_name)
+    return com5
+
+image = create_new_image()
+
+if not os.path.exists("./images"):
+    os.mkdir(f'./images')
+
+letters = string.ascii_uppercase
+
+rgb_im = generate_image(image).convert('RGB')
+file_name = ''.join(random.choice(letters) for i in range(10))
+rgb_im.save("./images/" + file_name)
+api = ipfsApi.Client('127.0.0.1', 5001)
+smartContract = smartContract('settings.json')
+res = api.add(f'./images/{file_name}.png')
+url = f"http:ipfs.io/ipfs/{res['Hash']}?filename={file_name}.png"
+image['external_link'] = url
+image['tokenId'] = smartContract.getCurrentId()
+createMetadata(image, file_name+".json")
+res = api.add(f'./metadata/{file_name}.json')
+fullname = input("Your Name")
+tx = smartContract.mint()
