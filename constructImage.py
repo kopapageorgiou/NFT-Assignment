@@ -44,18 +44,31 @@ def generate_image(image):
     com4 = Image.alpha_composite(com3, img5)
     com5 = Image.alpha_composite(com4, img6)
 
-    return com5
+    #return com5
+    if not os.path.exists("./images"):
+        os.mkdir(f'./images')
 
-image = create_new_image()
+
+    rgb_im = com5.convert('RGB')
+    #d = rgb_im.
+    return rgb_im
+
+"""image = create_new_image()
 
 if not os.path.exists("./images"):
     os.mkdir(f'./images')
 
-letters = string.ascii_uppercase
+
 
 rgb_im = generate_image(image).convert('RGB')
-file_name = ''.join(random.choice(letters) for i in range(10))
-rgb_im.save("./images/" + file_name +".png")
+rgb_im"""
+def save_image(image):
+
+    letters = string.ascii_uppercase
+    file_name = ''.join(random.choice(letters) for i in range(10))
+    image.save("./images/" + file_name +".png")
+    return file_name
+"""
 api = ipfsApi.Client('127.0.0.1', 5001)
 smartContract = smartContract('settings.ini')
 #smartContract.transferEther(20, "0x1d939efF66e4120C69434e89a95C19c0d4FE21c7")
@@ -86,4 +99,4 @@ file_name = metadata['external_link'].split('=')[-1]
 response = requests.get(metadata['external_link'])
 
 img = Image.open(BytesIO(response.content))
-img.show()
+img.show()"""
