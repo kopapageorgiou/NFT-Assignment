@@ -10,6 +10,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from loadAccount import *
+from createAccount import *
 from constructImage import *
 import sys as s
 from generate_metadata import *
@@ -247,6 +248,7 @@ class Ui_MainWindow(object):
     def backend(self):
         self.generateBtn.clicked.connect(self.generateImage)
         self.actionLoad_Account_2.triggered.connect(self.loadAccountWindow)
+        self.actionCreate_Account_2.triggered.connect(self.createAccountWindow)
         self.signBtn.clicked.connect(self.sign)
         self.mintBtn.clicked.connect(self.mint)
         self.pushButton.clicked.connect(self.getNftById)
@@ -259,6 +261,19 @@ class Ui_MainWindow(object):
         self.window.show()
         loop = QtCore.QEventLoop()
         self.window.destroyed.connect(loop.quit)
+        loop.exec() 
+        self.account = self.ui.account
+        print(self.account.address)
+
+    def createAccountWindow(self):
+        #self.window = QtWidgets.QMainWindow()
+        self.ui = CreateAccount()
+        self.Dialog = QtWidgets.QDialog()
+        self.ui.setupUi(self.Dialog)
+        self.Dialog.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        self.Dialog.show()
+        loop = QtCore.QEventLoop()
+        self.Dialog.destroyed.connect(loop.quit)
         loop.exec() 
         self.account = self.ui.account
         print(self.account.address)

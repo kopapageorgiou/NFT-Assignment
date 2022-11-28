@@ -55,7 +55,7 @@ class LoadAccount(object):
 
     def load(self, MainWindow):
         accId = self.lineEdit.text()
-        pwd = self.lineEdit.text()
+        pwd = self.lineEdit_2.text()
         self.account = accounts.load(accId, pwd)
         print("ok")
         MainWindow.close()
