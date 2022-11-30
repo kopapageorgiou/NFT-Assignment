@@ -12,7 +12,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from brownie import accounts
 
 class CreateAccount(object):
-    def setupUi(self, Dialog):
+    def setupUi(self, Dialog, smartContract):
         Dialog.setObjectName("Create Account")
         Dialog.resize(271, 131)
         self.buttonBox = QtWidgets.QDialogButtonBox(Dialog)
@@ -40,7 +40,7 @@ class CreateAccount(object):
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
         self.account = None
-        self.backend()
+        self.backend(smartContract)
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
@@ -48,15 +48,17 @@ class CreateAccount(object):
         self.label.setText(_translate("Dialog", "ID:"))
         self.label_2.setText(_translate("Dialog", "Password:"))
 
-    def backend(self):
-        self.buttonBox.accepted.connect(self.createAccount)
+    def backend(self, smartContract):
+        self.buttonBox.accepted.connect(lambda: self.createAccount(smartContract))
         
 
-    def createAccount(self):
+    def createAccount(self,smartContract):
         accId = self.lineEdit.text()
         pwd = self.lineEdit_2.text()
         self.account = accounts.add()
         self.account.save(accId, password= pwd)
+        #print(str(self.account.address), type(str(self.account.address)))
+        smartContract.transferEther(20, str(self.account.address))
 
 
 

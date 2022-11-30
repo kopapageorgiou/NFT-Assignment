@@ -31,7 +31,7 @@ def create_new_image():
 
 def generate_image(image):
 
-    img1 = Image.open(fl.face_files[image["face"]]).convert('RGBA')
+    img1 = Image.open(fl.face_files[image["face"]]).convert('RGBA',)
     img2 = Image.open(fl.eyes_files[image["eyes"]]).convert('RGBA')
     img3 = Image.open(fl.ears_files[image["ears"]]).convert('RGBA')
     img4 = Image.open(fl.hair_files[image["hair"]]).convert('RGBA')
@@ -43,13 +43,15 @@ def generate_image(image):
     com3 = Image.alpha_composite(com2, img4)
     com4 = Image.alpha_composite(com3, img5)
     com5 = Image.alpha_composite(com4, img6)
+    image = Image.new("RGBA", com5.size, color="GRAY")
+    image.paste(com5, mask=com5)
 
     #return com5
     if not os.path.exists("./images"):
         os.mkdir(f'./images')
 
 
-    rgb_im = com5.convert('RGB')
+    rgb_im = image.convert('RGB')
     #d = rgb_im.
     return rgb_im
 

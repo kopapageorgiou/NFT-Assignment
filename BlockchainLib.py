@@ -1,4 +1,5 @@
 from web3 import Web3
+from brownie import accounts
 import json, configparser
 class smartContract(object):
     
@@ -17,11 +18,12 @@ class smartContract(object):
             with open(r'./NFTBlockchain/build/contracts/NFT.json', 'r') as fp:
                 json_info = json.load(fp)
                 abi = json_info['abi']
-                self.account = config['SMART CONTRACT']['Default_Account']
+                self.account = accounts.from_mnemonic(config['SMART CONTRACT']["Mnemonic"])
+                print(self.account.address)
+                self.web3.eth.default_account = self.account.address
 
-                self.web3.eth.default_account = self.account
                 self.contract = self.web3.eth.contract(address=address, abi=abi)
-                print(self.account, self.contract)
+                #print(self.account, self.contract)
         except:
             print('An error occured while loading abi from file')
         
@@ -33,11 +35,13 @@ class smartContract(object):
         return receipt
     
     def getCurrentId(self):
-        return self.contract.functions.getCounter().call()
+        x = self.contract.functions.getCounter().call()
+        print(x)
+        return x
 
     def transferEther(self, amount, to):
-        nonce = self.web3.eth.getTransactionCount(self.account)
-        key = "a29ff473fb15934bb3d04a7d7b6f355d034c20d4a04ea17fef281df596265783"
+        nonce = self.web3.eth.getTransactionCount(self.account.address)
+        key = str(self.account.private_key)
 #build a transaction in a dictionary
         tx = {
             'nonce': nonce,
