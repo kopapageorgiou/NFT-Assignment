@@ -52,7 +52,7 @@ You must run the ipfs daemon. Run on terminal:
 
 2. Load account:
     - If you run the application for the first time you have to create a brownie account by going to <code>Settings menu-> Create Account</code>:
-    <img src="./sources/createaccount.png" width="600"/>
+    <img src="./sources/createAccount.png" width="600"/>
 
     - If you already have a brownie account, you can load it by going to <code>Settings menu-> Load Account</code>:
 
