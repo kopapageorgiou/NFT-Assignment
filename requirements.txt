@@ -1,0 +1,4 @@
+ipfshttpclient
+PyQt5
+ipfsapi
+web3
