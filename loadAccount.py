@@ -10,6 +10,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from brownie import accounts
+import sys
 class LoadAccount(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("Load Account")
@@ -62,7 +63,7 @@ class LoadAccount(object):
 
 
 if __name__ == "__main__":
-    import sys
+    
     app = QtWidgets.QApplication(sys.argv)
     Window = QtWidgets.QMainWindow()
     ui = LoadAccount()

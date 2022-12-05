@@ -5,7 +5,7 @@ import json
 import os
 import rarity as rar
 import filepaths as fl
-import ipfsApi
+import ipfsapi
 from BlockchainLib import *
 from generate_metadata import *
 from brownie import accounts
@@ -14,12 +14,11 @@ from eth_account.messages import encode_defunct
 from eth_utils import keccak
 from eth_abi.packed import encode_abi_packed
 from io import BytesIO
-import requests
+import requests, platform
 image = {}
 
 def create_new_image():
     new_image = {}
-
     new_image["face"] = random.choices(rar.face, rar.face_weights)[0]
     new_image["ears"] = random.choices(rar.ears, rar.ears_weights)[0]
     new_image["eyes"] = random.choices(rar.eyes, rar.eyes_weights)[0]
@@ -47,8 +46,14 @@ def generate_image(image):
     image.paste(com5, mask=com5)
 
     #return com5
-    if not os.path.exists("./images"):
-        os.mkdir(f'./images')
+    if platform.system() == "Windows":
+        
+        if not os.path.exists(".\\images"):
+            print('here')
+            os.mkdir(f'.\\images')
+    else:
+        if not os.path.exists("./images"):
+            os.mkdir(f'./images')
 
 
     rgb_im = image.convert('RGB')
@@ -68,7 +73,10 @@ def save_image(image):
 
     letters = string.ascii_uppercase
     file_name = ''.join(random.choice(letters) for i in range(10))
-    image.save("./images/" + file_name +".png")
+    if platform.system() == "Windows":
+        image.save(".\\images\\" + file_name +".png")
+    else:
+        image.save("./images/" + file_name +".png")
     return file_name
 """
 api = ipfsApi.Client('127.0.0.1', 5001)

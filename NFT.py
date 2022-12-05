@@ -4,7 +4,7 @@ from createAccount import *
 from constructImage import *
 import sys as s
 from generate_metadata import *
-import json, requests
+import json, requests, platform
 import ipfshttpclient
 
 class Ui_MainWindow(object):
@@ -20,9 +20,9 @@ class Ui_MainWindow(object):
         self.tabWidget.setObjectName("tabWidget")
         self.tab = QtWidgets.QWidget()
         self.tab.setObjectName("tab")
-        self.graphicsView = QtWidgets.QGraphicsView(self.tab)
-        self.graphicsView.setGeometry(QtCore.QRect(380, 10, 350, 350))
-        self.graphicsView.setObjectName("graphicsView")
+        #self.graphicsView = QtWidgets.QGraphicsView(self.tab)
+        #self.graphicsView.setGeometry(QtCore.QRect(380, 10, 350, 350))
+        #self.graphicsView.setObjectName("graphicsView")
         self.lineEdit_2 = QtWidgets.QLineEdit(self.tab)
         self.lineEdit_2.setGeometry(QtCore.QRect(150, 40, 151, 24))
         self.lineEdit_2.setObjectName("lineEdit_2")
@@ -32,6 +32,9 @@ class Ui_MainWindow(object):
         self.label_2 = QtWidgets.QLabel(self.tab)
         self.label_2.setEnabled(True)
         self.label_2.setGeometry(QtCore.QRect(10, 220, 161, 18))
+        self.label_image = QtWidgets.QLabel(self.tab)
+        self.label_image.setEnabled(True)
+        self.label_image.setGeometry(QtCore.QRect(380, 10, 350, 350))
         self.label_2.setObjectName("label_2")
         self.label_5 = QtWidgets.QLabel(self.tab)
         self.label_5.setEnabled(True)
@@ -71,9 +74,12 @@ class Ui_MainWindow(object):
         self.tabWidget.addTab(self.tab, "")
         self.tab_2 = QtWidgets.QWidget()
         self.tab_2.setObjectName("tab_2")
-        self.graphicsView_2 = QtWidgets.QGraphicsView(self.tab_2)
-        self.graphicsView_2.setGeometry(QtCore.QRect(380, 10, 350, 350))
-        self.graphicsView_2.setObjectName("graphicsView_2")
+        #self.graphicsView_2 = QtWidgets.QGraphicsView(self.tab_2)
+        #self.graphicsView_2.setGeometry(QtCore.QRect(380, 10, 350, 350))
+        #self.graphicsView_2.setObjectName("graphicsView_2")
+        self.label_image_1 = QtWidgets.QLabel(self.tab_2)
+        self.label_image_1.setEnabled(True)
+        self.label_image_1.setGeometry(QtCore.QRect(380, 10, 350, 350))
         self.label_7 = QtWidgets.QLabel(self.tab_2)
         self.label_7.setEnabled(True)
         self.label_7.setGeometry(QtCore.QRect(20, 30, 61, 16))
@@ -147,14 +153,14 @@ class Ui_MainWindow(object):
         
         self.api = None
         self.smartContract = None
-        self.api = ipfshttpclient.connect("/ip4/127.0.0.1/tcp/5001")
-        print(self.api.id())
+        
+        #print(self.api.id())
         try:
             #self.api = ipfsApi.Client('127.0.0.1', 5001)
-            print(1)
+            self.api = ipfshttpclient.connect("/ip4/127.0.0.1/tcp/5001")
         except Exception as e:
-            print('Couldn\' connect to ipfs node', e)
-            #s.exit()
+            print('Couldn\'t connect to ipfs node', e)
+            s.exit()
         try:
             self.smartContract = smartContract('settings.ini')
         except:
@@ -210,7 +216,6 @@ class Ui_MainWindow(object):
         self.window.destroyed.connect(loop.quit)
         loop.exec() 
         self.account = self.ui.account
-        print(self.account.address)
 
     def createAccountWindow(self):
         self.ui = CreateAccount()
@@ -222,12 +227,13 @@ class Ui_MainWindow(object):
         self.Dialog.destroyed.connect(loop.quit)
         loop.exec() 
         self.account = self.ui.account
-        print(self.account.address)
+        #print(self.account.address)
         
     def generateImage(self):
         self.img_ch = create_new_image()
         self.image = generate_image(self.img_ch)
-        self.loadImage(self.image.toqpixmap(), self.graphicsView)
+        #self.image.show()
+        self.loadImage(self.image.toqimage(), self.label_image)
 
     def sign(self):
         file_name = save_image(self.image)
@@ -235,17 +241,23 @@ class Ui_MainWindow(object):
         self.img_ch['Creator'] = self.lineEdit_2.text()
         self.img_ch['Title'] = self.lineEdit.text()
         self.img_ch['Description'] = self.textEdit.toPlainText()
-        res = self.api.add(f'./images/{file_name}.png', pin=True)
+        if platform.system() == "Windows":
+            res = self.api.add(f'.\\images\\{file_name}.png', pin=True)
+        else:
+            res = self.api.add(f'./images/{file_name}.png', pin=True)
         #print(res)
         #url = f"http://ipfs.io/ipfs/{res['Hash']}?filename={file_name}.png"
-        url = f"http://localhost:8080/ipfs/{res['Hash']}?filename={res['Hash']}"
+        url = f"http://127.0.0.1:8080/ipfs/{res['Hash']}?filename={res['Hash']}"
         self.img_ch['external_link'] = url
         tid = self.smartContract.getCurrentId()
         #print(tid)
         self.img_ch['tokenId'] = tid+1
         createMetadata(self.img_ch, file_name+".json")
         self.metadata = json.dumps(self.img_ch, indent=4)
-        res = self.api.add(f'./metadata/{file_name}.json')
+        if platform.system() == "Windows":
+            res = self.api.add(f'.\\metadata\\{file_name}.json')
+        else:
+            res = self.api.add(f'./metadata/{file_name}.json')
         mes = self.smartContract.getEthHash(self.metadata)
         self.signature = w3.eth.account.signHash(mes, self.account.private_key)
         
@@ -256,24 +268,27 @@ class Ui_MainWindow(object):
 
     def getNftById(self):
         tx1 = self.smartContract.getNFT(int(self.lineEdit_3.text()))
-        print(tx1)
+        #print(tx1)
         self.metadata = json.loads(tx1[0])
-        print(self.metadata)
+        print(self.metadata['external_link'])
         response = requests.get(self.metadata['external_link'],timeout=600)
         img = Image.open(BytesIO(response.content))
-        self.loadImage(img.toqpixmap(), self.graphicsView_2)
+        self.loadImage(img.toqimage(), self.label_image_1)
         self.label_11.setText(self.metadata['Creator'])
         self.label_12.setText(self.metadata['Title'])
         self.label_13.setText(self.metadata['Description'])
 
-    def loadImage(self, image, graphicView):
-        scene = QtWidgets.QGraphicsScene(MainWindow)
-        
-        pixmap = image
-        pixmap = pixmap.scaled(345,345)
-        item = QtWidgets.QGraphicsPixmapItem(pixmap)
-        scene.addItem(item)
-        graphicView.setScene(scene)
+    def loadImage(self, image, qlabel):
+            self.scene = QtWidgets.QGraphicsScene(MainWindow)
+            
+            image_profile = image
+            image_profile = image_profile.scaled(350,350, aspectRatioMode=QtCore.Qt.KeepAspectRatio, transformMode=QtCore.Qt.SmoothTransformation)
+            qlabel.setPixmap(QtGui.QPixmap.fromImage(image_profile))
+            
+            #pixmap = image.scaled(340,340)
+            #self.item = QtWidgets.QGraphicsPixmapItem(image)
+            #self.scene.addItem(self.item)
+            #self.graphicsView.setScene(self.scene)
 
 if __name__ == "__main__":
     import sys
