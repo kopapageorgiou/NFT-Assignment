@@ -1,4 +1,5 @@
 from PyQt5 import QtCore, QtGui, QtWidgets 
+from PyQt5.QtWidgets import QMessageBox
 from loadAccount import *
 from createAccount import *
 from constructImage import *
@@ -6,6 +7,7 @@ import sys as s
 from generate_metadata import *
 import json, requests, platform
 import ipfshttpclient
+from io import BytesIO
 
 class Ui_MainWindow(object):
     
@@ -20,9 +22,6 @@ class Ui_MainWindow(object):
         self.tabWidget.setObjectName("tabWidget")
         self.tab = QtWidgets.QWidget()
         self.tab.setObjectName("tab")
-        #self.graphicsView = QtWidgets.QGraphicsView(self.tab)
-        #self.graphicsView.setGeometry(QtCore.QRect(380, 10, 350, 350))
-        #self.graphicsView.setObjectName("graphicsView")
         self.lineEdit_2 = QtWidgets.QLineEdit(self.tab)
         self.lineEdit_2.setGeometry(QtCore.QRect(150, 40, 151, 24))
         self.lineEdit_2.setObjectName("lineEdit_2")
@@ -74,9 +73,6 @@ class Ui_MainWindow(object):
         self.tabWidget.addTab(self.tab, "")
         self.tab_2 = QtWidgets.QWidget()
         self.tab_2.setObjectName("tab_2")
-        #self.graphicsView_2 = QtWidgets.QGraphicsView(self.tab_2)
-        #self.graphicsView_2.setGeometry(QtCore.QRect(380, 10, 350, 350))
-        #self.graphicsView_2.setObjectName("graphicsView_2")
         self.label_image_1 = QtWidgets.QLabel(self.tab_2)
         self.label_image_1.setEnabled(True)
         self.label_image_1.setGeometry(QtCore.QRect(380, 10, 350, 350))
@@ -87,6 +83,7 @@ class Ui_MainWindow(object):
         self.lineEdit_3 = QtWidgets.QLineEdit(self.tab_2)
         self.lineEdit_3.setGeometry(QtCore.QRect(100, 28, 101, 24))
         self.lineEdit_3.setObjectName("lineEdit_3")
+        self.lineEdit_3.setValidator(QtGui.QIntValidator())
         self.pushButton = QtWidgets.QPushButton(self.tab_2)
         self.pushButton.setGeometry(QtCore.QRect(210, 28, 80, 24))
         self.pushButton.setObjectName("pushButton")
@@ -153,20 +150,22 @@ class Ui_MainWindow(object):
         
         self.api = None
         self.smartContract = None
-        
-        #print(self.api.id())
+        self.image = None
+        self.metadata = None
+        self.signature = None
         try:
             #self.api = ipfsApi.Client('127.0.0.1', 5001)
             self.api = ipfshttpclient.connect("/ip4/127.0.0.1/tcp/5001")
         except Exception as e:
             print('Couldn\'t connect to ipfs node', e)
+            error = QMessageBox.critical(MainWindow, "Error: IPFS daemon", "IPFS daemon is not running", defaultButton=QMessageBox.Ok)
             s.exit()
-        try:
-            self.smartContract = smartContract('settings.ini')
-        except:
-            #print('here1')
+
+        self.smartContract = smartContract('settings.ini')
+        if  not self.smartContract.web3.isConnected():
+            print('Couldn\'t establish connection with blockchain test network or smart contract')
+            error = QMessageBox.critical(MainWindow, "Error: Blockchain network failure", "Could not establish connection with the blockchain test network", defaultButton=QMessageBox.Ok)
             s.exit()
-        #smartContract.transferEther(20, "0x1d939efF66e4120C69434e89a95C19c0d4FE21c7")
         self.backend()
 
 
@@ -207,13 +206,13 @@ class Ui_MainWindow(object):
         self.pushButton.clicked.connect(self.getNftById)
 
     def loadAccountWindow(self):
-        self.window = QtWidgets.QMainWindow()
+        self.Dialog = QtWidgets.QDialog()
         self.ui = LoadAccount()
-        self.ui.setupUi(self.window)
-        self.window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        self.window.show()
+        self.ui.setupUi(self.Dialog)
+        self.Dialog.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        self.Dialog.show()
         loop = QtCore.QEventLoop()
-        self.window.destroyed.connect(loop.quit)
+        self.Dialog.destroyed.connect(loop.quit)
         loop.exec() 
         self.account = self.ui.account
 
@@ -227,56 +226,63 @@ class Ui_MainWindow(object):
         self.Dialog.destroyed.connect(loop.quit)
         loop.exec() 
         self.account = self.ui.account
-        #print(self.account.address)
         
     def generateImage(self):
         self.img_ch = create_new_image()
         self.image = generate_image(self.img_ch)
-        #self.image.show()
         self.loadImage(self.image.toqimage(), self.label_image)
 
     def sign(self):
-        file_name = save_image(self.image)
-        #print(file_name)
-        self.img_ch['Creator'] = self.lineEdit_2.text()
-        self.img_ch['Title'] = self.lineEdit.text()
-        self.img_ch['Description'] = self.textEdit.toPlainText()
-        if platform.system() == "Windows":
-            res = self.api.add(f'.\\images\\{file_name}.png', pin=True)
+        if self.image == None:
+            QtWidgets.QMessageBox.warning(MainWindow, "Warning: Image generation", "You must generate an image", defaultButton=QtWidgets.QMessageBox.Ok)
+        elif self.lineEdit_2.text() == "" or self.lineEdit.text() == "" or self.textEdit.toPlainText() == None:
+            QtWidgets.QMessageBox.warning(MainWindow, "Warning: Image metadata", "You must fill out image's metadata", defaultButton=QtWidgets.QMessageBox.Ok)
         else:
-            res = self.api.add(f'./images/{file_name}.png', pin=True)
-        #print(res)
-        #url = f"http://ipfs.io/ipfs/{res['Hash']}?filename={file_name}.png"
-        url = f"http://127.0.0.1:8080/ipfs/{res['Hash']}?filename={res['Hash']}"
-        self.img_ch['external_link'] = url
-        tid = self.smartContract.getCurrentId()
-        #print(tid)
-        self.img_ch['tokenId'] = tid+1
-        createMetadata(self.img_ch, file_name+".json")
-        self.metadata = json.dumps(self.img_ch, indent=4)
-        if platform.system() == "Windows":
-            res = self.api.add(f'.\\metadata\\{file_name}.json')
-        else:
-            res = self.api.add(f'./metadata/{file_name}.json')
-        mes = self.smartContract.getEthHash(self.metadata)
-        self.signature = w3.eth.account.signHash(mes, self.account.private_key)
+            file_name = save_image(self.image)
+            self.img_ch['Creator'] = self.lineEdit_2.text()
+            self.img_ch['Title'] = self.lineEdit.text()
+            self.img_ch['Description'] = self.textEdit.toPlainText()
+            if platform.system() == "Windows":
+                res = self.api.add(f'.\\images\\{file_name}.png', pin=True)
+            else:
+                res = self.api.add(f'./images/{file_name}.png', pin=True)
+            #url = f"http://ipfs.io/ipfs/{res['Hash']}?filename={file_name}.png"  #!This is for the public node
+            url = f"http://127.0.0.1:8080/ipfs/{res['Hash']}?filename={res['Hash']}"
+            self.img_ch['external_link'] = url
+            tid = self.smartContract.getCurrentId()
+            self.img_ch['tokenId'] = tid+1
+            createMetadata(self.img_ch, file_name+".json")
+            self.metadata = json.dumps(self.img_ch, indent=4)
+            if platform.system() == "Windows":
+                res = self.api.add(f'.\\metadata\\{file_name}.json')
+            else:
+                res = self.api.add(f'./metadata/{file_name}.json')
+            mes = self.smartContract.getEthHash(self.metadata)
+            self.signature = w3.eth.account.signHash(mes, self.account.private_key)
         
 
     def mint(self):
-        tx = self.smartContract.mint(self.account.address, self.signature.signature, self.img_ch['Creator'], self.metadata)
-        print(tx)
+        if self.signature == None:
+            QtWidgets.QMessageBox.warning(MainWindow, "Warning: Signature generation", "You must sign an image first", defaultButton=QtWidgets.QMessageBox.Ok)
+        else:
+            tx = self.smartContract.mint(self.account.address, self.signature.signature, self.img_ch['Creator'], self.metadata)
+            if tx.status == 1:
+                QtWidgets.QMessageBox.information(MainWindow, "Success", "NFT has been minted with ID: {}".format(self.img_ch['tokenId']), defaultButton=QtWidgets.QMessageBox.Ok)
+            else:
+                QtWidgets.QMessageBox.warning(MainWindow, "Warning: NFT creation", "Could not create NFT", defaultButton=QtWidgets.QMessageBox.Ok)
 
     def getNftById(self):
-        tx1 = self.smartContract.getNFT(int(self.lineEdit_3.text()))
-        #print(tx1)
-        self.metadata = json.loads(tx1[0])
-        print(self.metadata['external_link'])
-        response = requests.get(self.metadata['external_link'],timeout=600)
-        img = Image.open(BytesIO(response.content))
-        self.loadImage(img.toqimage(), self.label_image_1)
-        self.label_11.setText(self.metadata['Creator'])
-        self.label_12.setText(self.metadata['Title'])
-        self.label_13.setText(self.metadata['Description'])
+        if not self.lineEdit_3.text():
+            QtWidgets.QMessageBox.warning(MainWindow, "Warning: Empty ID", "You must enter an ID", defaultButton=QtWidgets.QMessageBox.Ok)
+        else:
+            tx1 = self.smartContract.getNFT(int(self.lineEdit_3.text()))
+            self.metadata = json.loads(tx1[0])
+            response = requests.get(self.metadata['external_link'],timeout=600)
+            img = Image.open(BytesIO(response.content))
+            self.loadImage(img.toqimage(), self.label_image_1)
+            self.label_11.setText(self.metadata['Creator'])
+            self.label_12.setText(self.metadata['Title'])
+            self.label_13.setText(self.metadata['Description'])
 
     def loadImage(self, image, qlabel):
             self.scene = QtWidgets.QGraphicsScene(MainWindow)
@@ -284,11 +290,6 @@ class Ui_MainWindow(object):
             image_profile = image
             image_profile = image_profile.scaled(350,350, aspectRatioMode=QtCore.Qt.KeepAspectRatio, transformMode=QtCore.Qt.SmoothTransformation)
             qlabel.setPixmap(QtGui.QPixmap.fromImage(image_profile))
-            
-            #pixmap = image.scaled(340,340)
-            #self.item = QtWidgets.QGraphicsPixmapItem(image)
-            #self.scene.addItem(self.item)
-            #self.graphicsView.setScene(self.scene)
 
 if __name__ == "__main__":
     import sys

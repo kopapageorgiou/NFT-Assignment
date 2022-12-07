@@ -1,20 +1,12 @@
 from PIL import Image
-from IPython.display import display
 import random, string
-import json
 import os
 import rarity as rar
 import filepaths as fl
-import ipfsapi
+#import ipfsapi #!Deprecated
 from BlockchainLib import *
 from generate_metadata import *
-from brownie import accounts
-from web3.auto import w3
-from eth_account.messages import encode_defunct
-from eth_utils import keccak
-from eth_abi.packed import encode_abi_packed
-from io import BytesIO
-import requests, platform
+import platform
 image = {}
 
 def create_new_image():
@@ -45,7 +37,6 @@ def generate_image(image):
     image = Image.new("RGBA", com5.size, color="GRAY")
     image.paste(com5, mask=com5)
 
-    #return com5
     if platform.system() == "Windows":
         
         if not os.path.exists(".\\images"):
@@ -57,18 +48,8 @@ def generate_image(image):
 
 
     rgb_im = image.convert('RGB')
-    #d = rgb_im.
     return rgb_im
 
-"""image = create_new_image()
-
-if not os.path.exists("./images"):
-    os.mkdir(f'./images')
-
-
-
-rgb_im = generate_image(image).convert('RGB')
-rgb_im"""
 def save_image(image):
 
     letters = string.ascii_uppercase
@@ -78,35 +59,3 @@ def save_image(image):
     else:
         image.save("./images/" + file_name +".png")
     return file_name
-"""
-api = ipfsApi.Client('127.0.0.1', 5001)
-smartContract = smartContract('settings.ini')
-#smartContract.transferEther(20, "0x1d939efF66e4120C69434e89a95C19c0d4FE21c7")
-res = api.add(f'./images/{file_name}.png')
-print(res)
-url = f"http://ipfs.io/ipfs/{res[0]['Hash']}?filename={file_name}.png"
-image['external_link'] = url
-fullname = input("Your Name: ")
-image['tokenId'] = smartContract.getCurrentId()
-createMetadata(image, file_name+".json")
-metadata = json.dumps(image, indent=4)
-res = api.add(f'./metadata/{file_name}.json')
-account = accounts.load('papas')
-
-print(metadata)
-mes = smartContract.getEthHash(metadata)
-print(mes)
-signature = w3.eth.account.signHash(mes, account.private_key)
-print(signature)
-print(str(signature.signature))
-tx = smartContract.mint(account.address, signature.signature, fullname, metadata)
-print(tx)
-tx1 = smartContract.getNFT(smartContract.getCurrentId())
-print(tx1)
-metadata = json.loads(tx1[0])
-print(metadata)
-file_name = metadata['external_link'].split('=')[-1]
-response = requests.get(metadata['external_link'])
-
-img = Image.open(BytesIO(response.content))
-img.show()"""

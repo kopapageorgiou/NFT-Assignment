@@ -12,18 +12,19 @@ class smartContract(object):
             timeout = int(config['SERVER']['Timeout'])
         except:
             print('An error occured while reading config file')
-        self.web3 = Web3(Web3.HTTPProvider(addr, request_kwargs={'timeout':timeout}))
-        address = self.web3.toChecksumAddress(config['SMART CONTRACT']['Address'])
+        try:
+            self.web3 = Web3(Web3.HTTPProvider(addr, request_kwargs={'timeout':timeout}))
+            address = self.web3.toChecksumAddress(config['SMART CONTRACT']['Address'])
+        except:
+            print("Could not establish connection with the Blockchain test network")
         try:
             with open(r'./NFTBlockchain/build/contracts/NFT.json', 'r') as fp:
                 json_info = json.load(fp)
                 abi = json_info['abi']
                 self.account = accounts.from_mnemonic(config['SMART CONTRACT']["Mnemonic"])
-                print(self.account.address)
                 self.web3.eth.default_account = self.account.address
 
                 self.contract = self.web3.eth.contract(address=address, abi=abi)
-                #print(self.account, self.contract)
         except:
             print('An error occured while loading abi from file')
         
@@ -36,13 +37,13 @@ class smartContract(object):
     
     def getCurrentId(self):
         x = self.contract.functions.getCounter().call()
-        print(x)
         return x
 
     def transferEther(self, amount, to):
         nonce = self.web3.eth.getTransactionCount(self.account.address)
         key = str(self.account.private_key)
-#build a transaction in a dictionary
+        print(self.account)
+        #build a transaction in a dictionary
         tx = {
             'nonce': nonce,
             'to': to,
