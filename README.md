@@ -6,7 +6,6 @@ or
 <code>pip install -r requirements.txt</code>.
 To install brownie you can follow the instructions from the [official documentation](https://eth-brownie.readthedocs.io/en/stable/install.html).
 
-**NOTE:** The app has not proper handling for errors!
 
 ---
 
